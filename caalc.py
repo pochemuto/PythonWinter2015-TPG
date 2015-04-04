@@ -79,11 +79,15 @@ PS1='--> '
 
 Stop=False
 while not Stop:
-    line = raw_input(PS1)
+    res = None
     try:
+        line = raw_input(PS1)
         res = calc(line)
     except tpg.Error as exc:
         print >> sys.stderr, exc
         res = None
+    except KeyboardInterrupt:
+        print "exited"
+        break
     if res != None:
         print res
