@@ -135,11 +135,7 @@ class Calc(tpg.Parser):
 
     """
 
-a = Vector([[1,223],[-1232,-12]])
-print a
-
-if __name__ == '__main__' and False:
-
+if __name__ == '__main__':
     calc = Calc()
     Vars={}
     PS1='--> '
