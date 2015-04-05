@@ -21,7 +21,23 @@ class Vector(list):
         list.__init__(self, *argp, **argn)
 
     def __str__(self):
-        return "[" + " ".join(str(c) for c in self) + "]"
+        rows, cols = self.dim()
+        if cols == 0:
+            return "[" + " ".join(str(c) for c in self) + "]"
+        else:
+            paddings = []
+            for c in range(cols):
+                paddings.append('{:^' + str(max(map(lambda i: len(str(i)), [self[r][c] for r in range(rows)]))) + '}')
+
+            result = ''
+            for r in range(rows):
+                result += '|'
+                for c in range(cols):
+                    result += paddings[c].format(self[r][c])
+                    if c < cols-1:
+                        result += ' '
+                result += '|\n'
+            return result
 
     def __op(self, a, op):
         try:
@@ -32,7 +48,30 @@ class Vector(list):
     def __add__(self, a): return self.__op(a, lambda c,d: c+d)
     def __sub__(self, a): return self.__op(a, lambda c,d: c-d)
     def __div__(self, a): return self.__op(a, lambda c,d: c/d)
-    def __mul__(self, a): return self.__op(a, lambda c,d: c*d)
+    def __mul__(self, b):
+        if isinstance(b, Vector):
+            a = self
+            da_rows, da_cols = a.dim()
+            db_rows, db_cols = b.dim()
+            if da_cols == 0:    # это вектор
+                if da_cols != db_cols:
+                    raise tpg.Error('cannot multiply vector with different sizes')
+                # скалярно делаем произведение
+                return reduce(lambda v, n: v + n[0]*n[1], zip(self, b), 0)
+            else:      # матрица
+                if da_cols != db_rows:
+                    raise tpg.Error('cannot multiply matrices')
+                result = Vector()
+                for r in range(da_rows):
+                    row = Vector()
+                    for c in range(db_cols):
+                        value = 0
+                        for n in range(db_rows):
+                            value += a[r][n] * b[n][c]
+                        row.append(value)
+                    result.append(row)
+                return result
+        return self.__op(b, lambda c,d: c*d)
 
     def __and__(self, a):
         try:
@@ -45,6 +84,29 @@ class Vector(list):
             return self.__class__(itertools.chain(self, a))
         except TypeError:
             return self.__class__(c or a for c in self)
+
+    def dim(self):
+        """
+        Размер матрицы
+        Возвращает количество строк и количество столбцов
+        Если это вектор, то количество столбцов - 0
+        """
+        rows = len(self)
+        if rows == 0:
+            return 0, 0
+
+        cols = Vector.safe_len(self[0])
+        for row in self:
+            if Vector.safe_len(row) != cols:
+                return rows, 0
+        return rows, cols
+
+    @staticmethod
+    def safe_len(obj):
+        if hasattr(obj, '__len__'):
+            return len(obj)
+        else:
+            return 0
 
 class Calc(tpg.Parser):
     r"""
@@ -73,21 +135,26 @@ class Calc(tpg.Parser):
 
     """
 
-calc = Calc()
-Vars={}
-PS1='--> '
+a = Vector([[1,223],[-1232,-12]])
+print a
 
-Stop=False
-while not Stop:
-    res = None
-    try:
-        line = raw_input(PS1)
-        res = calc(line)
-    except tpg.Error as exc:
-        print >> sys.stderr, exc
+if __name__ == '__main__' and False:
+
+    calc = Calc()
+    Vars={}
+    PS1='--> '
+
+    Stop=False
+    while not Stop:
         res = None
-    except KeyboardInterrupt:
-        print "exited"
-        break
-    if res != None:
-        print res
+        try:
+            line = raw_input(PS1)
+            res = calc(line)
+        except tpg.Error as exc:
+            print >> sys.stderr, exc
+            res = None
+        except KeyboardInterrupt:
+            print "exited"
+            break
+        if res is not None:
+            print res
