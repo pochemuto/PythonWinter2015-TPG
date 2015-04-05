@@ -116,6 +116,7 @@ class Calc(tpg.Parser):
     separator spaces: '\s+' ;
     separator comment: '#.*' ;
 
+    token exit: 'exit' ;
     token fnumber: '\d+[.]\d*' float ;
     token number: '\d+' int ;
     token op1: '[|&]' make_op ;
@@ -123,7 +124,8 @@ class Calc(tpg.Parser):
     token op2: '[*/]' make_op ;
     token id: '\w+' ;
 
-    START/e -> Operator $e=None$ | Expr/e | $e=None$ ;
+    START/e -> Command $e=None$ | Operator $e=None$ | Expr/e | $e=None$ ;
+    Command -> exit/c $self.exit()$ ;
     Operator -> Assign ;
     Assign -> id/i '=' Expr/e $Vars[i]=e$ ;
     Expr/t -> SumExpr/t ( op1/op SumExpr/f $t=op(t,f)$ )* ;
@@ -140,13 +142,19 @@ class Calc(tpg.Parser):
 
     """
 
+    def __init__(self):
+        super(Calc, self).__init__()
+        self.stop = False
+
+    def exit(self):
+        self.stop = True
+
 if __name__ == '__main__':
     calc = Calc()
     Vars={}
     PS1='--> '
 
-    Stop=False
-    while not Stop:
+    while not calc.stop:
         res = None
         try:
             line = raw_input(PS1)
