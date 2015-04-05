@@ -57,12 +57,12 @@ class Vector(list):
             db_rows, db_cols = b.dim()
             if da_cols == 0:    # это вектор
                 if da_cols != db_cols:
-                    raise tpg.Error('cannot multiply vector with different sizes')
+                    raise tpg.Error((0, 0), 'cannot multiply vector with different sizes')
                 # скалярно делаем произведение
                 return reduce(lambda v, n: v + n[0]*n[1], zip(self, b), 0)
             else:      # матрица
                 if da_cols != db_rows:
-                    raise tpg.Error('cannot multiply matrices')
+                    raise tpg.Error((0, 0), 'cannot multiply matrices')
                 result = Vector()
                 for r in range(da_rows):
                     row = Vector()
