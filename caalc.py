@@ -46,7 +46,9 @@ class Vector(list):
             return self.__class__(op(c,a) for c in self)
 
     def __add__(self, a): return self.__op(a, lambda c,d: c+d)
+    __radd__ = __add__
     def __sub__(self, a): return self.__op(a, lambda c,d: c-d)
+    def __rsub__(self, a): return self.__op(a, lambda c,d: d-c)
     def __div__(self, a): return self.__op(a, lambda c,d: c/d)
     def __mul__(self, b):
         if isinstance(b, Vector):
@@ -116,22 +118,25 @@ class Calc(tpg.Parser):
 
     token fnumber: '\d+[.]\d*' float ;
     token number: '\d+' int ;
-    token op1: '[|&+-]' make_op ;
+    token op1: '[|&]' make_op ;
+    token sum: '[+-]' make_op ;
     token op2: '[*/]' make_op ;
     token id: '\w+' ;
 
     START/e -> Operator $e=None$ | Expr/e | $e=None$ ;
     Operator -> Assign ;
     Assign -> id/i '=' Expr/e $Vars[i]=e$ ;
-    Expr/t -> Fact/t ( op1/op Fact/f $t=op(t,f)$ )* ;
-    Fact/f -> Atom/f ( op2/op Atom/a $f=op(f,a)$ )* ;
+    Expr/t -> SumExpr/t ( op1/op SumExpr/f $t=op(t,f)$ )* ;
+    SumExpr/t -> Fact/t (sum/op Fact/f $t=op(t,f)$ )* ;
+    Fact/f -> SignAtom/f ( op2/op SignAtom/a $f=op(f,a)$ )* ;
+    SignAtom/a -> ( sum/op Atom/a $a=op(0,a)$ ) | Atom/a ;
     Atom/a ->   Vector/a
               | id/i ( check $i in Vars$ | error $"Undefined variable '{}'".format(i)$ ) $a=Vars[i]$
               | fnumber/a
               | number/a
               | '\(' Expr/a '\)' ;
     Vector/$Vector(a)$ -> '\[' '\]' $a=[]$ | '\[' Atoms/a '\]' ;
-    Atoms/v -> Atom/a Atoms/t $v=[a]+t$ | Atom/a $v=[a]$ ;
+    Atoms/v -> SignAtom/a Atoms/t $v=[a]+t$ | SignAtom/a $v=[a]$ ;
 
     """
 
